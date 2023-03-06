@@ -1,0 +1,119 @@
+- hosts: all
+  tasks:
+
+# apk repos and packages
+
+  - name: Uncomment v3.17 community repos
+    ansible.builtin.lineinfile:
+      path: /etc/apk/repositories
+      regexp: "^#http://dl-cdn.alpinelinux.org/alpine/v3.17/community"
+      line: "http://dl-cdn.alpinelinux.org/alpine/v3.17/community"
+    notify: Reboot
+
+  - name: Uncomment edge community repos
+    ansible.builtin.lineinfile:
+      path: /etc/apk/repositories
+      regexp: "^#http://dl-cdn.alpinelinux.org/alpine/edge/community"
+      line: "http://dl-cdn.alpinelinux.org/alpine/edge/community"
+    notify: Reboot
+
+  - name: Uncomment edge testing repos
+    ansible.builtin.lineinfile:
+      path: /etc/apk/repositories
+      regexp: "^#http://dl-cdn.alpinelinux.org/alpine/edge/testing"
+      line: "http://dl-cdn.alpinelinux.org/alpine/edge/testing"
+    notify: Reboot
+
+  - name: Install packages
+    community.general.apk:
+      name: nano,curl,wget,cni-plugin-flannel,cni-plugins,flannel,flannel-contrib-cni,kubelet,kubeadm,kubectl,docker,uuidgen,nfs-utils
+      update_cache: true
+    notify: Reboot
+
+# br_netfilter
+
+  - name: Add kernel module for networking
+    ansible.builtin.lineinfile:
+      path: /etc/modules-load.d/k8s.conf
+      line: br_netfilter
+      create: yes
+    notify: Reboot
+
+  - name: Add br_netfilter module to modprobe
+    community.general.modprobe:
+      name: br_netfilter
+      state: present
+    notify: Reboot
+
+# disable swap
+
+  - name: Disable SWAP in fstab
+    replace:
+      path: /etc/fstab
+      regexp: '^([^#].*swap.*)$'
+      replace: '# \1'
+    register: disable_fstab_swap
+    notify: Reboot
+
+  - name: Disable SWAP
+    shell: "swapoff -a"
+    when: disable_fstab_swap.changed
+    notify: Reboot
+
+# machine id
+
+  - name: Check if /etc/machine-id exists
+    stat:
+      path: /etc/machine-id
+    register: machine_id_file
+
+  - name: Generate uuid
+    shell: "uuidgen"
+    when: not machine_id_file.stat.exists
+    register: uuidgen_cmd
+
+  - name: Create machine-id file
+    ansible.builtin.lineinfile:
+      path: /etc/machine-id
+      line: "{{ uuidgen_cmd.stdout_lines[0] }}"
+      create: yes
+    when: not machine_id_file.stat.exists
+    notify: Reboot
+
+# services
+
+  - name: Start and enable service docker
+    ansible.builtin.service:
+      name: docker
+      state: started
+      enabled: yes
+    notify: Reboot
+
+  - name: Enable service kubelet
+    ansible.builtin.service:
+      name: kubelet
+      enabled: yes
+    notify: Reboot
+
+# flannel symlink
+
+  - name: Create symlink for flannel
+    ansible.builtin.file:
+      src: /usr/libexec/cni/flannel
+      dest: /usr/libexec/cni/flannel-amd64
+      state: link
+
+# bridge iptables
+
+  - name: Enable iptables bridge
+    ansible.builtin.lineinfile:
+      path: /etc/sysctl.conf
+      line: "net.bridge.bridge-nf-call-iptables=1"
+    notify: Reboot
+
+# Reboot
+
+  handlers:
+    - name: Reboot
+      ansible.builtin.reboot:
+        reboot_timeout: 120
