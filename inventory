@@ -1,9 +1,9 @@
 [masters]
-alpine-master ansible_host=10.10.10.137
+alpine-master ansible_host=10.1.1.1
 
 [workers]
-alpine-worker0 ansible_host=10.10.10.138
-alpine-worker1 ansible_host=10.10.10.139
+alpine-worker0 ansible_host=10.1.1.100
+alpine-worker1 ansible_host=10.1.1.101
 
 [all:vars]
 ansible_python_interpreter=auto_silent

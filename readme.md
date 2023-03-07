@@ -27,19 +27,18 @@ ansible-playbook -i inventory prerequisites.yml
 Login to your **master node** and execute:
 
 ```bash
-kubeadm init --pod-network-cidr=192.168.0.0/16
+# keep subnet at 10.244.0.0/16
+kubeadm init --pod-network-cidr=10.244.0.0/16
 
-mkdir -p $HOME/.kube
-cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
+mkdir ~/.kube
+ln -s /etc/kubernetes/admin.conf /root/.kube/config
 
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml
+kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
 
-watch kubectl get pods -n calico-system
+watch kubectl get pods --all-namespaces
 ```
 
-The last command is interactive and will show you when the calico pods are up and running, wait until everything is up.
+The last command is interactive and will show you when the flannel and coredns pods are up and running, wait until everything is up.
 
 
 ## Join Worker Nodes to Cluster
@@ -68,7 +67,7 @@ kubectl get all
 ## Run Nginx Deployment
 
 ```bash
-kubectl apply -f nginx-deployment.yaml
+kubectl apply -f https://raw.githubusercontent.com/gmasil/alpine-scripts/master/nginx-deployment.yaml
 kubectl expose deployment nginx-deployment --port=80 --type=LoadBalancer
 
 kubectl get pods
