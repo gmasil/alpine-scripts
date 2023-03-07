@@ -64,3 +64,24 @@ On your master node execute:
 kubectl get nodes
 kubectl get all
 ```
+
+## Run Nginx Deployment
+
+```bash
+kubectl apply -f nginx-deployment.yaml
+kubectl expose deployment nginx-deployment --port=80 --type=LoadBalancer
+
+kubectl get pods
+get deployments
+kubectl get services
+```
+
+The last command will show you the node port where your nginx service is reachable:
+
+```
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes         ClusterIP      10.96.0.1       <none>        443/TCP        14m
+nginx-deployment   LoadBalancer   10.108.80.176   <pending>     80:32508/TCP   6m30s
+```
+
+So now you can see the Nginx welcome page under `http://<your-master-ip>:32508/`.
