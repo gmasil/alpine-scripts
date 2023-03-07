@@ -71,7 +71,7 @@ kubectl apply -f https://raw.githubusercontent.com/gmasil/alpine-scripts/master/
 kubectl expose deployment nginx-deployment --port=80 --type=LoadBalancer
 
 kubectl get pods
-get deployments
+kubectl get deployments
 kubectl get services
 ```
 
