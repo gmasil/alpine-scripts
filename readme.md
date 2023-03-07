@@ -28,7 +28,7 @@ Login to your **master node** and execute:
 
 ```bash
 # keep subnet at 10.244.0.0/16
-kubeadm init --pod-network-cidr=10.244.0.0/16
+kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address 10.1.1.1
 
 mkdir ~/.kube
 ln -s /etc/kubernetes/admin.conf /root/.kube/config
