@@ -27,11 +27,16 @@ ansible-playbook -i inventory prerequisites.yml
 Login to your **master node** and execute:
 
 ```bash
+export INTERNAL_IP=10.1.1.1
 # keep subnet at 10.244.0.0/16
-kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address 10.1.1.1 --control-plane-endpoint 10.1.1.1
+kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address $INTERNAL_IP --control-plane-endpoint $INTERNAL_IP
 
 mkdir ~/.kube
 ln -s /etc/kubernetes/admin.conf /root/.kube/config
+
+# fix internal IP of master node
+sed -i "s/\"$/ --node-ip=$INTERNAL_IP\"/" /var/lib/kubelet/kubeadm-flags.env
+service kubelet restart # if that does not work: reboot
 
 kubectl get nodes -o wide # verify that all internal IPs are actually internal not external
 
