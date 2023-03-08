@@ -28,10 +28,12 @@ Login to your **master node** and execute:
 
 ```bash
 # keep subnet at 10.244.0.0/16
-kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address 10.1.1.1
+kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address 10.1.1.1 --control-plane-endpoint 10.1.1.1
 
 mkdir ~/.kube
 ln -s /etc/kubernetes/admin.conf /root/.kube/config
+
+kubectl get nodes -o wide # verify that all internal IPs are actually internal not external
 
 kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
 
@@ -84,3 +86,36 @@ nginx-deployment   LoadBalancer   10.108.80.176   <pending>     80:32508/TCP   6
 ```
 
 So now you can see the Nginx welcome page under `http://<your-master-ip>:32508/`.
+
+## Ingress Stuff
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
+kubectl patch service ingress-nginx-controller -p '{"spec":{"externalIPs":["10.10.10.137"]}}' --namespace ingress-nginx
+```
+
+```yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example.com
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: example.com
+    http:
+      paths:
+        - path: /apple
+          pathType: Prefix
+          backend:
+            service:
+              name: apple-service
+              port:
+                number: 5678
+
+```
+
+kubectl apply -f ingress.yml
